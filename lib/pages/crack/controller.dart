@@ -1,17 +1,11 @@
-import 'dart:math';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:mai2_revive/providers/storage_provider.dart';
-import 'package:oktoast/oktoast.dart';
-
-import '../../common/qr_code.dart';
 import '../../components/loading_dialog/controller.dart';
-import '../../components/loading_dialog/widget.dart';
 import '../../models/user.dart';
-import '../../providers/chime_provider.dart';
 import '../../providers/mai2_provider.dart';
 import '../../pages/bound_users/repository.dart';
 
@@ -69,8 +63,6 @@ class CrackUsersController extends GetxController {
     String userIdString = BoundUserID.text;  // 获取字符串输入
     int userId = int.parse(userIdString);    // 将字符串转换为整型
 
-    String chipId =
-        "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";  //生成机台加密狗号
 
     UserModel user = await Mai2Provider.getUserPreview(userID: userId).then((value) {
       if (value.success) {

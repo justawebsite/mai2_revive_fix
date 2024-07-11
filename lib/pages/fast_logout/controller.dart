@@ -5,8 +5,6 @@ import 'package:get/get.dart';
 import 'package:mai2_revive/pages/fast_logout/view.dart';
 
 import '../../common/qr_code.dart';
-import '../../components/loading_dialog/controller.dart';
-import '../../components/loading_dialog/widget.dart';
 import '../../providers/chime_provider.dart';
 import '../../providers/mai2_provider.dart';
 
@@ -14,12 +12,17 @@ class FastLogoutController extends GetxController {
   TextEditingController qrCodeController = TextEditingController();
   TextEditingController starttime = TextEditingController();
 
+  var isCancelling = false.obs; // 用于跟踪取消操作的状态
+
   void logout(String rawQrCode) async {
     ChimeQrCode qrCode = ChimeQrCode(rawQrCode);
 
     Get.dialog(
       ProgressDialog(
         progressStream: _logoutWithProgress(qrCode),
+        onCancel: () {
+          isCancelling.value = true;
+        },
       ),
       barrierDismissible: false,
     );
@@ -53,7 +56,7 @@ class FastLogoutController extends GetxController {
 
     String startTime = starttime.text;
 
-    await for (var response in Mai2Provider.logout(userID, startTime)) {
+    await for (var response in Mai2Provider.logout(userID, startTime, isCancelling)) {
       yield "进度：${response.message}";
       if (response.success) {
         yield response.message;

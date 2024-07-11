@@ -248,13 +248,12 @@ class BoundUsersPage extends GetView<BoundUsersController> {
 
 class ProgressDialog extends StatelessWidget {
   final Stream<String> progressStream;
+  final VoidCallback onCancel;
 
-  const ProgressDialog({super.key, required this.progressStream});
+  const ProgressDialog({super.key, required this.progressStream, required this.onCancel});
 
   @override
   Widget build(BuildContext context) {
-    final BoundUsersController controller = Get.find();
-
     return AlertDialog(
       title: const Text('正在处理'),
       content: StreamBuilder<String>(
@@ -266,7 +265,7 @@ class ProgressDialog extends StatelessWidget {
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                const Text('准备中...'),
+                const Text('请求中...'),
               ],
             );
           } else if (snapshot.hasError) {
@@ -294,10 +293,7 @@ class ProgressDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () {
-            controller.isCancelling.value = true;
-            Get.back();
-          },
+          onPressed: onCancel,
           child: const Text('取消'),
         ),
       ],

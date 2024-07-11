@@ -70,8 +70,9 @@ class FastLogoutPage extends GetView<FastLogoutController> {
 
 class ProgressDialog extends StatelessWidget {
   final Stream<String> progressStream;
+  final VoidCallback onCancel;
 
-  const ProgressDialog({super.key, required this.progressStream});
+  const ProgressDialog({super.key, required this.progressStream, required this.onCancel});
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +115,7 @@ class ProgressDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () {
-            Get.back();
-          },
+          onPressed: onCancel,
           child: const Text('取消'),
         ),
       ],

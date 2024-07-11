@@ -13,7 +13,6 @@ import 'package:get/get_connect/http/src/request/request.dart';
 import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/login.dart';
-import '../utils/http.dart';
 
 class Mai2Login {
   static LinkedHashMap<String, String> maiHeader =

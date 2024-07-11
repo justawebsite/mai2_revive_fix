@@ -8,7 +8,6 @@ import 'package:mai2_revive/providers/storage_provider.dart';
 import 'package:oktoast/oktoast.dart';
 import '../../common/qr_code.dart';
 import '../../components/loading_dialog/controller.dart';
-import '../../components/loading_dialog/widget.dart';
 import '../../models/user.dart';
 import '../../providers/chime_provider.dart';
 import '../../providers/mai2_provider.dart';
@@ -147,13 +146,17 @@ class BoundUsersController extends GetxController {
     Get.dialog(
       ProgressDialog(
         progressStream: _logoutWithProgress(userId, startTime),
+        onCancel: () {
+          isCancelling.value = true;
+          Get.back(); // 关闭对话框
+        },
       ),
       barrierDismissible: false,
     );
   }
 
   Stream<String> _logoutWithProgress(int userId, String startTime) async* {
-    await for (var response in Mai2Provider.logout(userId, startTime)) {
+    await for (var response in Mai2Provider.logout(userId, startTime, isCancelling)) {
       yield "进度：${response.message}";
       if (response.success) {
         yield response.message;

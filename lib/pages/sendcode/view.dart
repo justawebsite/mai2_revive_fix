@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../models/login.dart';
 import '../../providers/mai2_login.dart'; // 确保导入路径正确
 
 class SendCodePage extends StatelessWidget {

@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
 import 'package:intl/intl.dart';
+import 'package:get/get.dart'; // 添加这行来导入 RxBool
 import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/user.dart';
@@ -91,10 +92,15 @@ class Mai2Provider {
     }
   }
 
-  static Stream<CommonResponse<Null>> logout(int userId, String startTime) async* {
+  static Stream<CommonResponse<Null>> logout(int userId, String startTime, RxBool isCancelling) async* {
     DateTime currentDateTime = parseDateTime(startTime);
 
     for (int i = 0; i < 3600; i++) {
+      if (isCancelling.value) {
+        yield CommonResponse(success: false, message: "操作已取消", data: null);
+        return;
+      }
+
       final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';
       final String data = jsonEncode({
         "userId": userId,
@@ -108,6 +114,9 @@ class Mai2Provider {
       maiHeader['Content-Length'] = body.length.toString();
 
       try {
+        // 打印当前的时间戳
+        print("Sending request with timestamp: ${formatDateTime(currentDateTime)}");
+
         final response = await Mai2HttpClient.post(
           Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UserLogoutApiMaimaiChn')}'),
           maiHeader,

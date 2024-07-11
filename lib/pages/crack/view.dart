@@ -86,7 +86,7 @@ class CrackController extends GetView<CrackUsersController> {
                 Get.to(() => SendCodePage(userName: user.userName, userId: user.userId));
               },
               child: const ListTile(
-                title: Text("开始发包"),
+                title: Text("获取信息"),
                 leading: Icon(Icons.logout),
               ),
             ),

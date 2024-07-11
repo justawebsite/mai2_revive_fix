@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -7,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:mai2_revive/pages/bound_users/view.dart';
 import 'package:mai2_revive/providers/storage_provider.dart';
 import 'package:oktoast/oktoast.dart';
-
 import '../../common/qr_code.dart';
 import '../../components/loading_dialog/controller.dart';
 import '../../components/loading_dialog/widget.dart';
@@ -86,8 +84,7 @@ class BoundUsersController extends GetxController {
       );
     }
 
-    String chipId =
-        "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
+    String chipId = "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
 
     int userID = await ChimeProvider.getUserId(
       chipId: chipId,
@@ -110,8 +107,7 @@ class BoundUsersController extends GetxController {
       );
     }
 
-    UserModel user =
-    await Mai2Provider.getUserPreview(userID: userID).then((value) {
+    UserModel user = await Mai2Provider.getUserPreview(userID: userID).then((value) {
       if (value.success) {
         return value.data!;
       } else {
@@ -157,33 +153,12 @@ class BoundUsersController extends GetxController {
   }
 
   Stream<String> _logoutWithProgress(int userId, String startTime) async* {
-    int startTimestamp = Mai2Provider.convertToUnixTimestamp(startTime);
-    for (int i = 0; i < 3600; i++) {
-      if (isCancelling.value) {
-        yield '操作已取消';
+    await for (var response in Mai2Provider.logout(userId, startTime)) {
+      yield "进度：${response.message}";
+      if (response.success) {
+        yield response.message;
         return;
       }
-
-      String message = await Mai2Provider.logout(userId, startTimestamp.toString()).then((value) {
-        if (value.success) {
-          return "逃离小黑屋成功：${value.message}";
-        } else {
-          return "逃离小黑屋失败：${value.message}";
-        }
-      });
-
-      yield "进度：${i + 1}/3600";
-
-      if (message.contains('成功')) {
-        yield message;
-        return;
-      }
-
-      startTimestamp += 1; // 每次增加1秒
-
-      await Future.delayed(Duration(seconds: 1));
     }
-
-    yield '所有请求均未返回预期值';
   }
 }

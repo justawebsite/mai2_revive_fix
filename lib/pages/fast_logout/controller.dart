@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mai2_revive/pages/fast_logout/view.dart';
 
 import '../../common/qr_code.dart';
 import '../../components/loading_dialog/controller.dart';
@@ -17,56 +18,47 @@ class FastLogoutController extends GetxController {
     ChimeQrCode qrCode = ChimeQrCode(rawQrCode);
 
     Get.dialog(
-      LoadingDialog(
-        task: () async {
-          String message = "";
-
-          if (!qrCode.valid) {
-            return TaskResult(
-              success: false,
-              message: '无效的二维码',
-            );
-          }
-          String chipId =
-              "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
-          int userID = await ChimeProvider.getUserId(
-            chipId: chipId,
-            timestamp: qrCode.timestamp,
-            qrCode: qrCode.qrCode,
-          ).then((value) {
-            if (value.success) {
-              return value.data;
-            } else {
-              message = "获取用户ID失败：${value.message}";
-              return -1;
-            }
-          });
-
-          if (userID == -1) {
-            return TaskResult(
-              success: false,
-              message: message,
-            );
-          }
-
-          String startTime = starttime.text;
-
-          message = await Mai2Provider.logout(userID, startTime).then((value) {
-            if (value.success) {
-              return "逃离小黑屋成功：${value.message}";
-            } else {
-              return "逃离小黑屋失败：${value.message}";
-            }
-          });
-
-          return TaskResult(
-            success: true,
-            message: message,
-          );
-        },
-        onSuccess: () {},
+      ProgressDialog(
+        progressStream: _logoutWithProgress(qrCode),
       ),
       barrierDismissible: false,
     );
+  }
+
+  Stream<String> _logoutWithProgress(ChimeQrCode qrCode) async* {
+    String message = "";
+
+    if (!qrCode.valid) {
+      yield '无效的二维码';
+      return;
+    }
+    String chipId = "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
+    int userID = await ChimeProvider.getUserId(
+      chipId: chipId,
+      timestamp: qrCode.timestamp,
+      qrCode: qrCode.qrCode,
+    ).then((value) {
+      if (value.success) {
+        return value.data;
+      } else {
+        message = "获取用户ID失败：${value.message}";
+        return -1;
+      }
+    });
+
+    if (userID == -1) {
+      yield message;
+      return;
+    }
+
+    String startTime = starttime.text;
+
+    await for (var response in Mai2Provider.logout(userID, startTime)) {
+      yield "进度：${response.message}";
+      if (response.success) {
+        yield response.message;
+        return;
+      }
+    }
   }
 }

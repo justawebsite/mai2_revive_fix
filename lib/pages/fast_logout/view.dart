@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import '../../routes/pages.dart';
 import 'controller.dart';
 
@@ -27,7 +26,7 @@ class FastLogoutPage extends GetView<FastLogoutController> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 20),  // 添加间隔
+                  const SizedBox(height: 20),
                   TextField(
                     controller: controller.starttime,
                     decoration: const InputDecoration(
@@ -65,6 +64,62 @@ class FastLogoutPage extends GetView<FastLogoutController> {
         },
         child: const Icon(Icons.qr_code),
       ),
+    );
+  }
+}
+
+class ProgressDialog extends StatelessWidget {
+  final Stream<String> progressStream;
+
+  const ProgressDialog({super.key, required this.progressStream});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('正在处理'),
+      content: StreamBuilder<String>(
+        stream: progressStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                const Text('准备中...'),
+              ],
+            );
+          } else if (snapshot.hasError) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('发生错误'),
+                const SizedBox(height: 16),
+                Text(snapshot.error.toString()),
+              ],
+            );
+          } else if (snapshot.hasData) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(snapshot.data!),
+              ],
+            );
+          } else {
+            return const Text('未知状态');
+          }
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Get.back();
+          },
+          child: const Text('取消'),
+        ),
+      ],
     );
   }
 }

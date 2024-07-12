@@ -7,7 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
 import 'package:intl/intl.dart';
-import 'package:get/get.dart'; // 添加这行来导入 RxBool
+import 'package:get/get.dart';
 import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/user.dart';
@@ -104,18 +104,27 @@ class Mai2Provider {
       final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';
       final String data = jsonEncode({
         "userId": userId,
+        "accessCode": "",
+        "regionId": 24,
+        "placeId": 1545,
         "clientId": "A63E01C2626",
-        "dateTime": formatDateTime(currentDateTime),
+        "dateTime": (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString(), // 转换为时间戳
         "type": 1
       });
+
+      // 打印发送的数据包内容
+      print("Sending request body: ${jsonEncode(data)}");
 
       final body = zlib.encode(aesEncrypt(data.toString()));
       maiHeader['User-Agent'] = userAgent;
       maiHeader['Content-Length'] = body.length.toString();
 
       try {
+        // 打印加密后的数据包内容
+        print("Sending request with encrypted body: $body");
+
         // 打印当前的时间戳
-        print("Sending request with timestamp: ${formatDateTime(currentDateTime)}");
+        print("Sending request with timestamp: ${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}");
 
         final response = await Mai2HttpClient.post(
           Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UserLogoutApiMaimaiChn')}'),
@@ -134,8 +143,15 @@ class Mai2Provider {
 
         try {
           message = aesDecrypt(Uint8List.fromList(zlib.decode(response.body)));
+
+
+
           final json = jsonDecode(message);
-          success = json['returnCode'] == 1;
+          success = json['returnCode'] == 0;
+
+          // 打印解密后的数据包内容
+          print("Received decrypted response body: $message");
+
           print("进度：${i + 1}/3600");
           if (success) {
             yield CommonResponse(success: true, message: "任务完成", data: null);

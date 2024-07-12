@@ -6,8 +6,10 @@ import 'package:get/get.dart';
 import 'package:mai2_revive/pages/bound_users/view.dart';
 import 'package:mai2_revive/providers/storage_provider.dart';
 import 'package:oktoast/oktoast.dart';
+import 'package:wakelock/wakelock.dart';
 import '../../common/qr_code.dart';
 import '../../components/loading_dialog/controller.dart';
+import '../../components/loading_dialog/widget.dart';
 import '../../models/user.dart';
 import '../../providers/chime_provider.dart';
 import '../../providers/mai2_provider.dart';
@@ -149,6 +151,7 @@ class BoundUsersController extends GetxController {
         onCancel: () {
           isCancelling.value = true;
           Get.back(); // 关闭对话框
+          Wakelock.disable(); // 禁用 Wakelock 允许屏幕熄屏
         },
       ),
       barrierDismissible: false,
@@ -156,12 +159,17 @@ class BoundUsersController extends GetxController {
   }
 
   Stream<String> _logoutWithProgress(int userId, String startTime) async* {
+    Wakelock.enable(); // 启用 Wakelock 保持屏幕常亮
+
     await for (var response in Mai2Provider.logout(userId, startTime, isCancelling)) {
       yield "进度：${response.message}";
       if (response.success) {
         yield response.message;
+        Wakelock.disable(); // 禁用 Wakelock 允许屏幕熄屏
         return;
       }
     }
+
+    Wakelock.disable(); // 禁用 Wakelock 允许屏幕熄屏
   }
 }

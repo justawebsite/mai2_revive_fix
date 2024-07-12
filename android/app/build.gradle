@@ -66,6 +66,7 @@ flutter {
 
 dependencies {
     implementation 'com.google.guava:guava:28.2-android'
+    implementation 'com.google.android.material:material'
 }
 
 configurations.all {

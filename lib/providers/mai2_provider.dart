@@ -154,10 +154,11 @@ class Mai2Provider {
           // 打印解密后的数据包内容
           print("Received decrypted response body: $message");
 
-          print("进度：${i + 1}/3600");
           if (success) {
             yield CommonResponse(success: true, message: "任务完成", data: null);
             return;
+          } else {
+            yield CommonResponse(success: false, message: "进度：${i + 1}/3600", data: null);
           }
         } catch (e) {
           success = false;

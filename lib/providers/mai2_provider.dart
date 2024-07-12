@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
@@ -100,14 +101,15 @@ class Mai2Provider {
         yield CommonResponse(success: false, message: "操作已取消", data: null);
         return;
       }
+      String chipId = "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
 
       final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';
       final String data = jsonEncode({
         "userId": userId,
         "accessCode": "",
-        "regionId": 24,
-        "placeId": 1545,
-        "clientId": "A63E01C2626",
+        "regionId": "",
+        "placeId": "",
+        "clientId": chipId,
         "dateTime": (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString(), // 转换为时间戳
         "type": 1
       });

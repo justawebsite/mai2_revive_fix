@@ -1,22 +1,21 @@
 import 'dart:collection';
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
-
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
-
+import 'package:intl/intl.dart';
+import 'package:get/get.dart';
 import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/user.dart';
 import '../utils/http.dart';
 
 class Mai2Provider {
-  static LinkedHashMap<String, String> maiHeader =
-      LinkedHashMap<String, String>.from({
+  static LinkedHashMap<String, String> maiHeader = LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
     "User-Agent": "",
     "charset": "UTF-8",
@@ -24,129 +23,171 @@ class Mai2Provider {
     "Content-Encoding": "deflate",
     "Content-Length": "",
     "Host": AppConstants.mai2Host,
-  });  //构建http数据包
+  });
 
   static String obfuscate(String srcStr) {
     final m = md5.convert(('$srcStr${AppConstants.mai2Salt}').codeUnits);
     return m.toString();
-  }  //拼接字符串和盐值，转换成UTF-16编码并进行MD5加密，再转换为MD5哈希值，最后转换成16进制的字符串
+  }
 
-  static Uint8List aesEncrypt(String data) {  //待加密字符串
+  static Uint8List aesEncrypt(String data) {
     final key = Key.fromUtf8(AppConstants.aesKey);
-    final iv = IV.fromUtf8(AppConstants.aesIV);  //获取设置的aeskey和iv值并转换为加密算法所需的编码格式
-    final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));  //创建加密器
-    return encrypter.encrypt(data, iv: iv).bytes;  //加密并提取.bytes属性，
+    final iv = IV.fromUtf8(AppConstants.aesIV);
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));
+    return encrypter.encrypt(data, iv: iv).bytes;
   }
 
   static String aesDecrypt(Uint8List data) {
     final key = Key.fromUtf8(AppConstants.aesKey);
     final iv = IV.fromUtf8(AppConstants.aesIV);
     final encrypter = Encrypter(AES(key, mode: AESMode.cbc, padding: 'PKCS7'));
-    return encrypter.decrypt(Encrypted(data), iv: iv);  //解密并返回解密后的原始数据
-  }  //大致同上，只不过变成了解密
+    return encrypter.decrypt(Encrypted(data), iv: iv);
+  }
 
   static Future<CommonResponse<UserModel?>> getUserPreview({
-    required int userID,  //获取userid值
+    required int userID,
   }) async {
     final data = jsonEncode({
-      'userId': userID,
+      'userId': userID
     });
-    final body = zlib.encode(aesEncrypt(data.toString()));  //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
-
-    maiHeader['User-Agent'] =
-        "${obfuscate('GetUserPreviewApiMaimaiChn')}#$userID";  //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
-    maiHeader['Content-Length'] = body.length.toString();  //更新请求体的字节长度
+    final body = zlib.encode(aesEncrypt(data.toString()));
+    maiHeader['User-Agent'] = "${obfuscate('GetUserPreviewApiMaimaiChn')}#$userID";
+    maiHeader['Content-Length'] = body.length.toString();
 
     try {
-      final client = HttpClient();  //构造http请求
-
+      final client = HttpClient();
       final request = await client.postUrl(
-        Uri.parse(
-            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserPreviewApiMaimaiChn')}'),
-      );  //设置URL并发送数据包
+        Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserPreviewApiMaimaiChn')}'),
+      );
 
-      request.headers.clear();  //清空http请求头
+      request.headers.clear();
       for (final key in maiHeader.keys) {
         request.headers.add(key, maiHeader[key]!, preserveHeaderCase: true);
-      }  //使用 for 循环遍历之前在 maiHeader 中定义的请求头键值，对于 maiHeader 的每一个键（key），从 maiHeader 中获取对应的值（maiHeader[key]!），并使用 request.headers.add 方法将其添加到请求的头部，参数 preserveHeaderCase: true 确保在添加头信息时保持原有的大小写格式。
+      }
 
-      request.add(body);  //将准备好的请求包“body”添加到http请求中
-
-      await request.flush();  //确保数据包发送
-
-      final response = await request.close();  //转为接收服务器数据包
+      request.add(body);
+      await request.flush();
+      final response = await request.close();
 
       String message = "";
       bool success = false;
-      UserModel? user;  //初始化一个message空字符和一个布尔值，声明一个usermodel变量
-
-      final responseBody = await response.toBytes();  //接收数据包并转换为字节数组
+      UserModel? user;
+      final responseBody = await response.toBytes();
 
       try {
-        message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody)));  //解压响应体并转换编码和解密数据
-        final json = jsonDecode(message);  //解析得到的json数据
+        message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody)));
+        final json = jsonDecode(message);
         if (json['userId'] == null || json['userName'] == null) {
           success = false;
           message = "用户为空，可能未注册";
         } else {
           user = UserModel.fromJson(json);
           success = true;
-        }  //如果json中不包含userid和username则提示用户未注册，反正则创建usermodel实例并更新success为true
+        }
       } catch (e) {
         success = false;
         message = utf8.decode(responseBody);
-      }  //捕获和处理解密解压解析数据过程中的错误
+      }
 
-      return CommonResponse(
-        success: success,
-        data: user,
-        message: message,
-      );
+      return CommonResponse(success: success, data: user, message: message);
     } catch (e) {
-      return CommonResponse(
-        success: false,
-        data: null,
-        message: e.toString(),
-      );
-    }  //封装数据处理结果
+      return CommonResponse(success: false, data: null, message: e.toString());
+    }
   }
 
-  static Future<CommonResponse<Null>> logout(int userId) async {
-    final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';  //还是生成user-agent
-    final String data = "{\"userId\":$userId}";  //封装请求体为用户id
+  static Stream<CommonResponse<Null>> logout(int userId, String startTime, RxBool isCancelling) async* {
+    DateTime currentDateTime = parseDateTime(startTime);
 
-    final body = zlib.encode(aesEncrypt(data.toString()));  //aes加密并zlib压缩
+    for (int i = 0; i < 3600; i++) {
+      if (isCancelling.value) {
+        yield CommonResponse(success: false, message: "操作已取消", data: null);
+        return;
+      }
+      String chipId = "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
 
-    maiHeader['User-Agent'] = userAgent;  //标头
-    maiHeader['Content-Length'] = body.length.toString();  //字节长度
-    try {
-      final response = await Mai2HttpClient.post(
-        Uri.parse(
-            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UserLogoutApiMaimaiChn')}'),
-        maiHeader,
-        body,
-      );  //发送post请求，并等待响应
+      final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';
+      final String data = jsonEncode({
+        "userId": userId,
+        "accessCode": "",
+        "regionId": "",
+        "placeId": "",
+        "clientId": chipId,
+        "dateTime": (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString(), // 转换为时间戳
+        "type": 1
+      });
 
-      bool success = false;
-      String message = "未知错误";
+      // 打印发送的数据包内容
+      print("Sending request body: ${jsonEncode(data)}");
 
-      if (response.body.isEmpty) {
-        message = "服务器返回为空";
-        success = false;
-        return CommonResponse(success: success, message: message, data: null);
-      }  //如果接收的响应为空则提示
+      final body = zlib.encode(aesEncrypt(data.toString()));
+      maiHeader['User-Agent'] = userAgent;
+      maiHeader['Content-Length'] = body.length.toString();
 
       try {
-        message = aesDecrypt(Uint8List.fromList(zlib.decode(response.body)));
-        success = true;
-      } catch (e) {
-        success = false;
-        message = utf8.decode(response.body);
-      }  //反之，则解压转换解密数据包，同样catch异常信息并处理
 
-      return CommonResponse(success: success, message: message, data: null);
-    } catch (e) {
-      return CommonResponse(success: false, message: e.toString(), data: null);
-    }  //返回结果
+        // 打印当前的时间戳
+        print("Sending request with timestamp: ${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}");
+
+        final response = await Mai2HttpClient.post(
+          Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UserLogoutApiMaimaiChn')}'),
+          maiHeader,
+          body,
+        );
+
+        bool success = false;
+        String message = "未知错误";
+
+        if (response.body.isEmpty) {
+          message = "服务器返回为空";
+          success = false;
+          yield CommonResponse(success: success, message: message, data: null);
+        }
+
+        try {
+          message = aesDecrypt(Uint8List.fromList(zlib.decode(response.body)));
+
+          final json = jsonDecode(message);
+          success = json['returnCode'] == 0;
+
+          // 打印解密后的数据包内容
+          print("Received decrypted response body: $message");
+
+          if (success) {
+            yield CommonResponse(success: true, message: "任务完成", data: null);
+            return;
+          } else {
+            yield CommonResponse(success: false, message: "进度：${i + 1}/3600", data: null);
+          }
+        } catch (e) {
+          success = false;
+          message = utf8.decode(response.body);
+        }
+
+        await Future.delayed(Duration(seconds: 1));
+      } catch (e) {
+        yield CommonResponse(success: false, message: e.toString(), data: null);
+        return;
+      }
+
+      currentDateTime = currentDateTime.add(Duration(seconds: 1));
+    }
+
+    yield CommonResponse(success: false, message: "所有请求均未返回预期值", data: null);
+  }
+
+  static DateTime parseDateTime(String time) {
+    final now = DateTime.now();
+    final dateTimeString = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} $time";
+    print("DateTime String: $dateTimeString");
+
+    final dateTime = DateFormat("yyyy-MM-dd HH:mm").parse(dateTimeString);
+    print("Parsed DateTime: $dateTime");
+
+    return dateTime;
+  }
+
+  static String formatDateTime(DateTime dateTime) {
+    final formattedDateTime = DateFormat("yyyy-MM-dd HH:mm:ss").format(dateTime);
+    return formattedDateTime;
   }
 }

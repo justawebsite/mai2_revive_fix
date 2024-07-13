@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mai2_revive/pages/sendcode/view.dart';
 import '../../models/user.dart';
+import '../ticket/view.dart';
 import 'controller.dart' as crack;
 import 'controller.dart';
 
@@ -88,6 +89,16 @@ class CrackController extends GetView<CrackUsersController> {
               child: const ListTile(
                 title: Text("获取信息"),
                 leading: Icon(Icons.logout),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.back();
+                Get.to(() => SendTikcetPage(userName: user.userName, userId: user.userId));
+              },
+              child: const ListTile(
+                title: Text("发券"),
+                leading: Icon(Icons.airplane_ticket),
               ),
             ),
             InkWell(

@@ -14,7 +14,7 @@ import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/login.dart';
 
-class Mai2Login {
+class Mai2Ticket {
   static LinkedHashMap<String, String> maiHeader =
   LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
@@ -45,23 +45,30 @@ class Mai2Login {
     return encrypter.decrypt(Encrypted(data), iv: iv);  //解密并返回解密后的原始数据
   }  //大致同上，只不过变成了解密
 
-  static Future<CommonResponse<UserModel?>> UserLoginIn({
+  static Future<CommonResponse<UserModel?>> SendTicket({
     required int userID,  //获取userid值
-    required String timestamp,
   }) async {
     final data = jsonEncode({
-      'userId': userID,
-      'accessCode':"",
-      'regionId': 24,
-      'clientId': "A63E01C2626",
-      'dateTime': timestamp,
-      'isContinue': false,
-      'genericFlag': 0,
+      "userId": userID,
+      "userChargelog": {
+        "chargeId": 2,
+        "price": 1,
+        "purchaseDate": "2024-07-12 21:04:58.0",
+        "placeId": 1545,
+        "regionId": 24,
+        "clientId": "A63E01C2626"
+      },
+      "userCharge": {
+        "chargeId": 2,
+        "stock": 1,
+        "purchaseDate": "2024-07-12 21:04:58.0",
+        "validDate": "2024-10-10 04:00:00"
+      }
     });
     final body = zlib.encode(aesEncrypt(data.toString()));  //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
 
     maiHeader['User-Agent'] =
-    "${obfuscate('UserLoginApiMaimaiChn')}#$userID";  //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
+    "${obfuscate('UpsertUserChargelogApiMaimaiChn')}#$userID";  //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
     maiHeader['Content-Length'] = body.length.toString();  //更新请求体的字节长度
 
     try {
@@ -69,7 +76,7 @@ class Mai2Login {
 
       final request = await client.postUrl(
         Uri.parse(
-            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserPreviewApiMaimaiChn')}'),
+            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UpsertUserChargelogApiMaimaiChn')}'),
       );  //设置URL并发送数据包
 
       request.headers.clear();  //清空http请求头
@@ -91,11 +98,14 @@ class Mai2Login {
 
       try {
         message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody)));  //解压响应体并转换编码和解密数据
+
+        print("Received decrypted response body: $message");
+
         final json = jsonDecode(message);  //解析得到的json数据
-        if (json['loginId'] == null) {
+        if (json['returnCode'] == null) {
           success = false;
-          message = "获取登录ID失败";
-        } else {
+          message = "发券失败";
+        } else  {
           user = UserModel.fromJson(json);
           user.UserLoginID = json['loginId'];  // 正确更新 UserModel 实例的 UserLoginID 属性
           success = true;

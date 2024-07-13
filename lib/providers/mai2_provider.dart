@@ -47,7 +47,9 @@ class Mai2Provider {
   static Future<CommonResponse<UserModel?>> getUserPreview({
     required int userID,
   }) async {
-    final data = jsonEncode({'userId': userID});
+    final data = jsonEncode({
+      'userId': userID
+    });
     final body = zlib.encode(aesEncrypt(data.toString()));
     maiHeader['User-Agent'] = "${obfuscate('GetUserPreviewApiMaimaiChn')}#$userID";
     maiHeader['Content-Length'] = body.length.toString();
@@ -122,8 +124,6 @@ class Mai2Provider {
       maiHeader['Content-Length'] = body.length.toString();
 
       try {
-        // 打印加密后的数据包内容
-        print("Sending request with encrypted body: $body");
 
         // 打印当前的时间戳
         print("Sending request with timestamp: ${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}");
@@ -145,8 +145,6 @@ class Mai2Provider {
 
         try {
           message = aesDecrypt(Uint8List.fromList(zlib.decode(response.body)));
-
-
 
           final json = jsonDecode(message);
           success = json['returnCode'] == 0;

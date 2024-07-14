@@ -20,7 +20,6 @@ class SendCodePage extends StatelessWidget {
       body: FutureBuilder<Map<String, dynamic>>(
         future: Mai2Preview.UserLoginIn(
           userID: userId,
-          timestamp: DateTime.now().millisecondsSinceEpoch.toString(),
         ), // 调用登录方法
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

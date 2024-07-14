@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -43,6 +42,7 @@ class Mai2Login {
 
   static Future<CommonResponse<UserModel?>> UserLoginOn({
     required int userID, // 获取userid值
+    required int timestamp, // 添加 timestamp 参数
   }) async {
     // 创建 JSON 数据
     final Map<String, dynamic> data = {
@@ -51,12 +51,12 @@ class Mai2Login {
       "regionId": 24,
       "placeId": 1545,
       "clientId": "A63E01C2626",
-      "dateTime": 1720918805,
+      "dateTime": timestamp,
       "isContinue": false,
       "genericFlag": 0
     };
-
-    print("send body: $data");
+    final jsonData = jsonEncode(data);
+    print("send body: $jsonData");
 
     final body = zlib.encode(aesEncrypt(jsonEncode(data))); // 将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
     maiHeader['User-Agent'] = "${obfuscate('UserLoginApiMaimaiChn')}#$userID"; // 将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid

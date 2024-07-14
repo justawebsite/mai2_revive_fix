@@ -185,7 +185,7 @@ class Mai2Provider {
       bool retry = true;
       while (retry) {
         try {
-          final loginCheck = await Mai2Preview.UserLoginIn(userID: userId, timestamp: (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString());
+          final loginCheck = await Mai2Preview.UserLoginIn(userID: userId,);
           if (loginCheck['isLogin'] == false) {
             yield CommonResponse(success: false, message: "登出成功，该机台时间戳为${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}", data: null);
             return;

@@ -14,7 +14,7 @@ import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/login.dart';
 
-class Mai2Login {
+class Mai2Data {
   static LinkedHashMap<String, String> maiHeader =
   LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",

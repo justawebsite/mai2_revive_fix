@@ -1,11 +1,13 @@
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mai2_revive/pages/sendcode/view.dart';
 import '../../models/user.dart';
-import '../../pages/ticket/view.dart';
+import '../../providers/mai2_logout.dart';
+import '../sendcode/view.dart';
+import '../ticket/view.dart';
 import 'controller.dart' as crack;
 import 'controller.dart';
+import '../../providers/mai2_login.dart'; // 确保导入路径正确
 
 class CrackController extends GetView<CrackUsersController> {
   const CrackController({super.key});
@@ -29,7 +31,7 @@ class CrackController extends GetView<CrackUsersController> {
   }
 
   Widget _buildBindUserDialog() {
-    final controller = Get.find<crack.CrackUsersController>();  // 使用 Get.find 获取控制器实例
+    final controller = Get.find<crack.CrackUsersController>(); // 使用 Get.find 获取控制器实例
     return Obx(() => AlertDialog(
       title: const Text('绑定用户'),
       content: Column(
@@ -88,17 +90,27 @@ class CrackController extends GetView<CrackUsersController> {
               },
               child: const ListTile(
                 title: Text("获取信息"),
-                leading: Icon(Icons.logout),
+                leading: Icon(Icons.message),
               ),
             ),
             InkWell(
               onTap: () {
                 Get.back();
-                Get.to(() => SendTikcetPage(userName: user.userName, userId: user.userId));
+                Get.to(() => SendTicketPage(userName: user.userName, userId: user.userId));
               },
               child: const ListTile(
                 title: Text("发券"),
                 leading: Icon(Icons.airplane_ticket),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.back();
+                _showCustomTimestampDialog(user.userId);
+              },
+              child: const ListTile(
+                title: Text("自定义时间戳登出"),
+                leading: Icon(Icons.logout),
               ),
             ),
             InkWell(
@@ -143,8 +155,61 @@ class CrackController extends GetView<CrackUsersController> {
     );
   }
 
+  void _showCustomTimestampDialog(int userId) {
+    final TextEditingController timestampController = TextEditingController();
+    final isCancelling = false.obs;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('自定义时间戳登出'),
+        content: TextField(
+          controller: timestampController,
+          decoration: const InputDecoration(
+            labelText: '时间戳',
+            hintText: '请输入时间戳',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+            },
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final timestamp = int.tryParse(timestampController.text);
+              if (timestamp != null) {
+                final loginResponse = await Mai2Login.UserLoginOn(userID: userId, timestamp: timestamp);
+                final response = await Mai2Logout.logout(userId, isCancelling, timestamp);
+                Get.back();
+                Get.dialog(AlertDialog(
+                  title: const Text('登出状态'),
+                  content: Text('${loginResponse.message}\n${response.message}'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Get.back();
+                      },
+                      child: const Text('确定'),
+                    ),
+                  ],
+                ));
+              } else {
+                Get.snackbar('错误', '请输入有效的时间戳');
+              }
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody() {
-    final controller = Get.find<crack.CrackUsersController>();  // 确保使用 Get.find
+    final controller = Get.find<crack.CrackUsersController>(); // 确保使用 Get.find
     return EasyRefresh.builder(
       childBuilder: (context, physics) {
         return Obx(() {

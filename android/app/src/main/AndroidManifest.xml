@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="Mai批复活"
+        android:label="乌蒙山"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

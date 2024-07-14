@@ -1,9 +1,7 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mai2_revive/pages/fast_logout/view.dart';
-
 import '../../common/qr_code.dart';
 import '../../providers/chime_provider.dart';
 import '../../providers/mai2_provider.dart';
@@ -55,6 +53,9 @@ class FastLogoutController extends GetxController {
     }
 
     String startTime = starttime.text;
+    if (startTime.length == 4) {
+      startTime = "${startTime.substring(0, 2)}:${startTime.substring(2, 4)}";
+    }
 
     await for (var response in Mai2Provider.logout(userID, startTime, isCancelling)) {
       yield "进度：${response.message}";

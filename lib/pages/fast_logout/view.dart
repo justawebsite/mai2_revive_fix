@@ -31,13 +31,37 @@ class FastLogoutPage extends GetView<FastLogoutController> {
                     controller: controller.starttime,
                     decoration: const InputDecoration(
                       labelText: '机台开机时间',
-                      hintText: "请输入机台开机时间",
+                      hintText: "请输入四位数字，如0930",
                       border: OutlineInputBorder(),
                     ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    onChanged: (value) {
+                      if (value.length == 4) {
+                        final hour = int.tryParse(value.substring(0, 2));
+                        final minute = int.tryParse(value.substring(2, 4));
+                        if (hour == null || minute == null || hour >= 24 || minute >= 60) {
+                          // 无效的时间格式
+                          controller.starttime.clear();
+                          Get.snackbar('无效时间', '请输入有效的时间，格式为四位数字，前两位小于24，后两位小于60');
+                        }
+                      }
+                    },
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () {
+                      final startTime = controller.starttime.text;
+                      if (startTime.length != 4) {
+                        Get.snackbar('无效时间', '请输入四位数字时间，格式如0930，09代表小时，30代表分钟，请使用24小时值且自行转换为东京时间输入');
+                        return;
+                      }
+                      final hour = int.tryParse(startTime.substring(0, 2));
+                      final minute = int.tryParse(startTime.substring(2, 4));
+                      if (hour == null || minute == null || hour >= 24 || minute >= 60) {
+                        Get.snackbar('无效时间', '请输入有效的时间，格式为四位数字，前两位小于24，后两位小于60');
+                        return;
+                      }
                       controller.logout(controller.qrCodeController.text);
                     },
                     child: const Text('逃离小黑屋'),
@@ -115,7 +139,10 @@ class ProgressDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: onCancel,
+          onPressed: () {
+            onCancel();
+            Get.back(); // 关闭对话框
+          },
           child: const Text('取消'),
         ),
       ],

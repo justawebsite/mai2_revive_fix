@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mai2_revive/pages/sendcode/view.dart';
 import '../../models/user.dart';
-import '../ticket/view.dart';
+import '../../pages/ticket/view.dart';
 import 'controller.dart' as crack;
 import 'controller.dart';
 

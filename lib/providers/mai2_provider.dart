@@ -2,7 +2,6 @@ import 'dart:collection';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
@@ -12,7 +11,6 @@ import 'package:get/get.dart';
 import '../common/constants.dart';
 import '../common/response.dart';
 import '../models/user.dart';
-import '../utils/http.dart';
 import 'mai2_preview.dart'; // 导入Mai2Preview
 
 class Mai2Provider {
@@ -97,46 +95,57 @@ class Mai2Provider {
   static Stream<CommonResponse<Null>> logout(int userId, String startTime, RxBool isCancelling) async* {
     DateTime currentDateTime = parseDateTime(startTime);
 
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 5; j++) {
+    for (int i = 0; i < 9; i++) {
+      for (int j = 0; j < 400; j++) {
         if (isCancelling.value) {
           yield CommonResponse(success: false, message: "操作已取消", data: null);
           return;
         }
-        String chipId = "A63E-01E${Random().nextInt(999999999).toString().padLeft(8, '0')}";
 
         final String userAgent = '${obfuscate('UserLogoutApiMaimaiChn')}#$userId';
-        final String data = jsonEncode({
+        final Map<String, dynamic> data = {
           "userId": userId,
           "accessCode": "",
-          "regionId": "",
-          "placeId": "",
-          "clientId": chipId,
-          "dateTime": (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString(), // 转换为时间戳
+          "regionId": 24,
+          "placeId": 1545,
+          "clientId": "A63E01C2626",
+          "dateTime": currentDateTime.millisecondsSinceEpoch ~/ 1000, // 转换为时间戳
           "type": 1
-        });
+        };
 
         // 打印发送的数据包内容
         print("Sending request body: ${jsonEncode(data)}");
 
-        final body = zlib.encode(aesEncrypt(data.toString()));
+        final body = zlib.encode(aesEncrypt(jsonEncode(data)));
         maiHeader['User-Agent'] = userAgent;
         maiHeader['Content-Length'] = body.length.toString();
 
         try {
           // 打印当前的时间戳
-          print("Sending request with timestamp: ${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}");
+          print("Sending request with timestamp: ${data['dateTime']}");
+          final client = HttpClient();
 
-          final response = await Mai2HttpClient.post(
+          final request = await client.postUrl(
             Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UserLogoutApiMaimaiChn')}'),
-            maiHeader,
-            body,
           );
+
+          request.headers.clear(); // 清空http请求头
+          for (final key in maiHeader.keys) {
+            request.headers.add(key, maiHeader[key]!, preserveHeaderCase: true);
+          } // 使用 for 循环遍历之前在 maiHeader 中定义的请求头键值，对于 maiHeader 的每一个键（key），从 maiHeader 中获取对应的值（maiHeader[key]!），并使用 request.headers.add 方法将其添加到请求的头部，参数 preserveHeaderCase: true 确保在添加头信息时保持原有的大小写格式。
+
+          request.add(body); // 将准备好的请求包“body”添加到http请求中
+
+          await request.flush(); // 确保数据包发送
+
+          final response = await request.close();
 
           bool success = false;
           String message = "未知错误";
 
-          if (response.body.isEmpty) {
+          final responseBody = await response.toBytes();
+
+          if (responseBody.isEmpty) {
             message = "服务器返回为空";
             success = false;
             yield CommonResponse(success: success, message: message, data: null);
@@ -144,7 +153,7 @@ class Mai2Provider {
           }
 
           try {
-            message = aesDecrypt(Uint8List.fromList(zlib.decode(response.body)));
+            message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody)));
 
             final json = jsonDecode(message);
             success = json['returnCode'] == 0;
@@ -156,7 +165,7 @@ class Mai2Provider {
               yield CommonResponse(success: true, message: "任务完成", data: null);
               return;
             } else {
-              yield CommonResponse(success: false, message: "进度：${i * 900 + j + 1}/3600", data: null);
+              yield CommonResponse(success: false, message: "进度：${i * 400 + j + 1}/3600", data: null);
             }
           } catch (e) {
             print("解码或解密失败，重新发送请求: $e");
@@ -172,11 +181,19 @@ class Mai2Provider {
         currentDateTime = currentDateTime.add(Duration(seconds: 1));
       }
 
-      // 每发送5次请求后调用Mai2Preview的UserLoginIn
-      final loginCheck = await Mai2Preview.UserLoginIn(userID: userId, timestamp: (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString());
-      if (loginCheck['isLogin'] == false) {
-        yield CommonResponse(success: false, message: "登出成功，该机台时间戳为${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}", data: null);
-        return;
+      // 每发送400次请求后调用Mai2Preview的UserLoginIn
+      bool retry = true;
+      while (retry) {
+        try {
+          final loginCheck = await Mai2Preview.UserLoginIn(userID: userId, timestamp: (currentDateTime.millisecondsSinceEpoch ~/ 1000).toString());
+          if (loginCheck['isLogin'] == false) {
+            yield CommonResponse(success: false, message: "登出成功，该机台时间戳为${(currentDateTime.millisecondsSinceEpoch ~/ 1000)}", data: null);
+            return;
+          }
+          retry = false; // 成功获取到数据，停止重试
+        } catch (e) {
+          print("UserLoginIn 请求失败，重新尝试: $e");
+        }
       }
     }
 

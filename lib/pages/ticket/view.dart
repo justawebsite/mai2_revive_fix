@@ -36,7 +36,7 @@ class SendTikcetPage extends StatelessWidget {
                 child: Text('登入成功，账号: $userName, 登录ID: ${user?.UserLoginID}'), // 显示用户数据
               );
             } else {
-              return Center(child: Text("获取失败: ${response.message}")); // 显示错误信息
+              return Center(child: Text("登录失败: ${response.message}")); // 显示错误信息
             }
           } else {
             return Center(child: Text("未能获取到数据")); // 显示失败信息

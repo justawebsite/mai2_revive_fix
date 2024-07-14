@@ -45,19 +45,20 @@ class Mai2Login {
     required int userID, // 获取userid值
   }) async {
     // 创建 JSON 数据
-    final data = jsonEncode({
-      'userId': userID,
-      'accessCode': "",
-      'regionId': 24,
-      'clientId': "A63E01C2626",
-      'dateTime': "1720792835",
-      'isContinue': false,
-      'genericFlag': 0,
-    });
+    final Map<String, dynamic> data = {
+      "userId": userID,
+      "accessCode": "",
+      "regionId": 24,
+      "placeId": 1545,
+      "clientId": "A63E01C2626",
+      "dateTime": 1720918805,
+      "isContinue": false,
+      "genericFlag": 0
+    };
 
     print("send body: $data");
 
-    final body = zlib.encode(aesEncrypt(data)); // 将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
+    final body = zlib.encode(aesEncrypt(jsonEncode(data))); // 将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
     maiHeader['User-Agent'] = "${obfuscate('UserLoginApiMaimaiChn')}#$userID"; // 将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
     maiHeader['Content-Length'] = body.length.toString(); // 更新请求体的字节长度
 
@@ -105,7 +106,7 @@ class Mai2Login {
           success = false;
         } else {
           user = UserModel.fromJson(json);
-          user.UserLoginID = json['loginId']; // 正确更新 UserModel 实例的 UserLoginID 属性
+          user.UserLoginID = json['loginId']?.toString(); // 正确更新 UserModel 实例的 UserLoginID 属性并转换为字符串类型
           success = true;
         }
       } catch (e) {

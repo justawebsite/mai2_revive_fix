@@ -88,15 +88,28 @@ class Mai2Logout {
         message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody)));
 
         final json = jsonDecode(message);
-        success = json['returnCode'] == 0;
+        final returnCode = json['returnCode'];
+        success = returnCode == 1;
 
         // 打印解密后的数据包内容
         print("Received decrypted response body: $message");
 
         if (success) {
-          return CommonResponse(success: true, message: "登出成功", data: null);
-        } else {
-          return CommonResponse(success: false, message: "登出失败：当前时间戳为$timestamp，可尝试手动登出", data: null);
+          bool loginCheckSuccess = false;
+
+          // 调用Mai2Preview的UserLoginIn进行状态验证
+          while (!loginCheckSuccess) {
+            final loginCheck = await Mai2Preview.UserLoginIn(userID: userId);
+            loginCheckSuccess = loginCheck['isLogin'] == false;
+
+            if (loginCheckSuccess) {
+              return CommonResponse(success: true, message: "登出成功", data: null);
+            } else {
+              await Future.delayed(Duration(milliseconds: 100));
+            }
+          }
+        } else if (returnCode == 0) {
+          return CommonResponse(success: false, message: "登出失败，数据包格式错误，时间戳为$timestamp，请尝试手动登出", data: null);
         }
       } catch (e) {
         print("解码或解密失败: $e");
@@ -107,20 +120,6 @@ class Mai2Logout {
       return CommonResponse(success: false, message: e.toString(), data: null);
     }
 
-    // 调用Mai2Preview的UserLoginIn
-    bool retry = true;
-    while (retry) {
-      try {
-        final loginCheck = await Mai2Preview.UserLoginIn(userID: userId,);
-        if (loginCheck['isLogin'] == false) {
-          return CommonResponse(success: true, message: "登出成功", data: null);
-        }
-        retry = false; // 成功获取到数据，停止重试
-      } catch (e) {
-        print("UserLoginIn 请求失败，重新尝试: $e");
-      }
-    }
-
-    return CommonResponse(success: false, message: "登出失败", data: null);
+    return CommonResponse(success: false, message: "登出失败：当前时间戳为$timestamp，可尝试手动登出", data: null);
   }
 }

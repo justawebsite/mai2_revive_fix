@@ -104,16 +104,18 @@ class Mai2Login {
 
         if (json['loginId'] == null) {
           success = false;
+          message = "请在公众号重新点击一次获取二维码过后再试（不需要进行其他操作）";
         } else {
           user = UserModel.fromJson(json);
           user.UserLoginID = json['loginId']?.toString(); // 正确更新 UserModel 实例的 UserLoginID 属性并转换为字符串类型
           success = true;
         }
       } catch (e) {
-        print("Error during decoding and decryption: $e");
         success = false;
         message = "解析数据出错: $e";
       }
+
+      print("message: $message");
 
       return CommonResponse(
         success: success,

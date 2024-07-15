@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:crypto/crypto.dart';
-
 import '../common/chime_error.dart';
 import '../common/constants.dart';
 import '../common/response.dart';

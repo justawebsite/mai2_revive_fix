@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../providers/mai2_login.dart'; // 确保导入路径正确
-import '../../common/response.dart';
 import '../../models/login.dart'; // 确保导入路径正确
 import '../../providers/mai2_ticket.dart'; // 引入发券方法
 import '../../providers/mai2_logout.dart'; // 引入登出方法
+import '../../providers/mai2_GetUserCharge.dart'; // 引入验证未使用券的方法
 import 'package:get/get.dart';
 
 class SendTicketPage extends StatefulWidget {
@@ -33,8 +33,51 @@ class _SendTicketPageState extends State<SendTicketPage> {
   @override
   void initState() {
     super.initState();
-    timestamp = DateTime.now().toUtc().add(Duration(hours: 9)).millisecondsSinceEpoch ~/ 1000; // 初始化东京时间戳
-    _loginUser();
+    timestamp = _getTokyoTimestamp(); // 初始化东京时间戳
+    _checkUnusedTickets(); // 检查未使用的券
+  }
+
+  int _getTokyoTimestamp() {
+    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // 手动添加东京时间的偏移量
+    return now.millisecondsSinceEpoch ~/ 1000;
+  }
+
+  Future<void> _checkUnusedTickets() async {
+    final response = await Mai2Charge.UserLoginIn(userID: widget.userId);
+    if (response.success) {
+      bool hasUnusedTickets = response.data['userChargeList'].any((charge) => charge['chargeId'] != 11001 && charge['stock'] != 0);
+      if (hasUnusedTickets) {
+        _showUnusedTicketsDialog();
+      } else {
+        _loginUser();
+      }
+    } else {
+      setState(() {
+        message = "检查未使用券失败: ${response.message}";
+        _showErrorDialog(message);
+      });
+    }
+  }
+
+  void _showUnusedTicketsDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('提示'),
+          content: const Text('账户中存在未使用的券'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // 退出页面
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _loginUser() async {
@@ -46,8 +89,30 @@ class _SendTicketPageState extends State<SendTicketPage> {
     } else {
       setState(() {
         message = "登录失败: ${response.message}";
+        _showErrorDialog(message);
       });
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('错误'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // 退出页面
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _sendTicket() async {

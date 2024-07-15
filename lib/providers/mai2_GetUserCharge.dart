@@ -1,19 +1,16 @@
 import 'dart:collection';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
-import 'package:intl/intl.dart'; // 引入 intl 包以处理日期和时间
 import '../common/constants.dart';
 import '../common/response.dart';
-import '../models/login.dart';
 
-class Mai2Ticket {
-  static LinkedHashMap<String, String> maiHeader =
-  LinkedHashMap<String, String>.from({
+
+class Mai2Charge {
+  static LinkedHashMap<String, String> maiHeader = LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
     "User-Agent": "",
     "charset": "UTF-8",
@@ -43,43 +40,14 @@ class Mai2Ticket {
     return encrypter.decrypt(Encrypted(data), iv: iv); //解密并返回解密后的原始数据
   } //大致同上，只不过变成了解密
 
-  static Future<CommonResponse<UserModel?>> SendTicket({
+  static Future<CommonResponse<Map<String, dynamic>>> UserLoginIn({
     required int userID, //获取userid值
-    required int chargeId,
-    required int price,
   }) async {
-    // 获取当前时间
-    final now = DateTime.now();
-    // 格式化当前时间为 purchaseDate 格式
-    final purchaseDate = DateFormat('yyyy-MM-dd HH:mm:ss.S').format(now);
-    // 获取三个月后的日期，并设置时间为 04:00:00
-    final validDate = DateFormat('yyyy-MM-dd 04:00:00').format(
-        now.add(Duration(days: 90)));
+    final data = jsonEncode({'userId': userID});
+    final body = zlib.encode(aesEncrypt(data.toString())); //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
 
-    final data = jsonEncode({
-      "userId": userID,
-      "userChargelog": {
-        "chargeId": chargeId,
-        "price": price,
-        "purchaseDate": purchaseDate,
-        "placeId": 1545,
-        "regionId": 24,
-        "clientId": "A63E01C2626"
-      },
-      "userCharge": {
-        "chargeId": chargeId,
-        "stock": 1,
-        "purchaseDate": purchaseDate,
-        "validDate": validDate
-      }
-    });
-
-    print("Received decrypted response body: $data");
-
-    final body = zlib.encode(
-        aesEncrypt(data)); //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
-
-    maiHeader['User-Agent'] = "${obfuscate('UpsertUserChargelogApiMaimaiChn')}#$userID"; //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
+    maiHeader['User-Agent'] =
+    "${obfuscate('GetUserChargeApiMaimaiChn')}#$userID"; //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
     maiHeader['Content-Length'] = body.length.toString(); //更新请求体的字节长度
 
     try {
@@ -87,7 +55,7 @@ class Mai2Ticket {
 
       final request = await client.postUrl(
         Uri.parse(
-            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UpsertUserChargelogApiMaimaiChn')}'),
+            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserChargeApiMaimaiChn')}'),
       ); //设置URL并发送数据包
 
       request.headers.clear(); //清空http请求头
@@ -103,38 +71,25 @@ class Mai2Ticket {
 
       String message = "";
       bool success = false;
+      Map<String, dynamic> jsonData = {};
 
       final responseBody = await response.toBytes(); //接收数据包并转换为字节数组
 
       try {
         message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody))); //解压响应体并转换编码和解密数据
+        jsonData = jsonDecode(message); //解析得到的json数据
 
-        print("Received decrypted response body: $message");
+        print('charge message: $message');
 
-        final json = jsonDecode(message); //解析得到的json数据
-        if (json['returnCode'] == 1) {
-          success = true;
-          message = "发券成功,请勿多次发券，如账户内存有多张跑图券会导致无法上传游戏数据";
-        } else {
-          success = false;
-          message = "发券失败";
-        }
+        success = true;
       } catch (e) {
-        success = false;
         message = "解析数据出错: $e";
+        success = false;
       }
 
-      return CommonResponse(
-        success: success,
-        data: null,
-        message: message,
-      );
+      return CommonResponse(success: success, data: jsonData, message: message);
     } catch (e) {
-      return CommonResponse(
-        success: false,
-        data: null,
-        message: e.toString(),
-      );
+      return CommonResponse(success: false, data: {}, message: "请求出错: $e");
     }
   }
 }

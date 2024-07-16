@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:get/get.dart';
 import '../../providers/lxns_GetSongJacket.dart';
 import '../../providers/lxns_Updatamusiclist.dart';
 

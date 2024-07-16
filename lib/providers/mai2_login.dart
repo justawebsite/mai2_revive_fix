@@ -111,8 +111,9 @@ class Mai2Login {
           success = true;
         }
       } catch (e) {
-        success = false;
-        message = "解析数据出错: $e";
+        print ("$e");
+        // 重试请求
+        return await UserLoginOn(userID: userID, timestamp: timestamp);
       }
 
       print("message: $message");

@@ -1,13 +1,13 @@
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mai2_revive/providers/mai2_GetData.dart';
 import '../../models/user.dart';
 import '../../providers/mai2_logout.dart';
 import '../sendcode/view.dart';
 import '../ticket/view.dart';
 import 'controller.dart' as crack;
 import 'controller.dart';
-import '../../providers/mai2_login.dart'; // 确保导入路径正确
 
 class CrackController extends GetView<CrackUsersController> {
   const CrackController({super.key});
@@ -182,21 +182,26 @@ class CrackController extends GetView<CrackUsersController> {
             onPressed: () async {
               final timestamp = int.tryParse(timestampController.text);
               if (timestamp != null) {
-                final loginResponse = await Mai2Login.UserLoginOn(userID: userId, timestamp: timestamp);
-                final response = await Mai2Logout.logout(userId, isCancelling, timestamp);
-                Get.back();
-                Get.dialog(AlertDialog(
-                  title: const Text('登出状态'),
-                  content: Text('${loginResponse.message}\n${response.message}'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Get.back();
-                      },
-                      child: const Text('确定'),
-                    ),
-                  ],
-                ));
+                final getDataResponse = await Mai2Getdata.GetData(userID: userId);
+
+                if (getDataResponse.success) {
+                  final logoutResponse = await Mai2Logout.logout(userId, isCancelling, timestamp);
+                  Get.back();
+                  Get.dialog(AlertDialog(
+                    title: const Text('登出状态'),
+                    content: Text(logoutResponse.message), // 直接使用response.message
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Get.back();
+                        },
+                        child: const Text('确定'),
+                      ),
+                    ],
+                  ));
+                } else {
+                  Get.snackbar('错误', '获取数据失败: ${getDataResponse.message}');
+                }
               } else {
                 Get.snackbar('错误', '请输入有效的时间戳');
               }

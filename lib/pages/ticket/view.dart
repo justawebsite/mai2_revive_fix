@@ -38,14 +38,23 @@ class _SendTicketPageState extends State<SendTicketPage> {
   }
 
   int _getTokyoTimestamp() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 9)); // 手动添加东京时间的偏移量
-    return now.millisecondsSinceEpoch ~/ 1000;
+    final now = DateTime.now();
+    final localOffset = now.timeZoneOffset.inSeconds; // 获取当前设备的时区偏移量
+    const tokyoOffset = 9 * 3600; // 东京时间相对于UTC的偏移量，单位为秒
+    final tokyoTimestamp = now.toUtc().millisecondsSinceEpoch ~/ 1000 + tokyoOffset - localOffset; // 计算东京时间戳
+    return tokyoTimestamp;
   }
+
 
   Future<void> _checkUnusedTickets() async {
     final response = await Mai2Charge.UserLoginIn(userID: widget.userId);
     if (response.success) {
-      bool hasUnusedTickets = response.data['userChargeList'].any((charge) => charge['chargeId'] != 11001 && charge['stock'] != 0);
+      bool hasUnusedTickets = false;
+
+      if (response.data['userChargeList'] != null) {
+        hasUnusedTickets = response.data['userChargeList'].any((charge) => charge['chargeId'] != 11001 && charge['stock'] != 0);
+      }
+
       if (hasUnusedTickets) {
         _showUnusedTicketsDialog();
       } else {

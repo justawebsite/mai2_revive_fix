@@ -49,7 +49,7 @@ class Mai2Logout {
       "placeId": 1545,
       "clientId": "A63E01C2626",
       "dateTime": timestamp,
-      "type": 5
+      "type": 4
     };
 
     // 打印发送的数据包内容
@@ -79,7 +79,6 @@ class Mai2Logout {
 
       final response = await request.close();
 
-      bool success = false;
       String message = "未知错误";
 
       final responseBody = await response.toBytes();
@@ -89,30 +88,31 @@ class Mai2Logout {
 
         final json = jsonDecode(message);
         final returnCode = json['returnCode'];
-        success = returnCode == 1;
 
-        // 打印解密后的数据包内容
-        print("Received decrypted response body: $message");
+        print("接收: $json");
 
-        if (success) {
+        if (returnCode == 1) {
           bool loginCheckSuccess = false;
 
-          // 调用Mai2Preview的UserLoginIn进行状态验证
           while (!loginCheckSuccess) {
             final loginCheck = await Mai2Preview.UserLoginIn(userID: userId);
             loginCheckSuccess = loginCheck['isLogin'] == false;
 
             if (loginCheckSuccess) {
               return CommonResponse(success: true, message: "登出成功", data: null);
+            } else if (loginCheck['isLogin'] == true) {
+              return CommonResponse(success: false, message: "登出失败：当前时间戳为$timestamp，可尝试手动登出", data: null);
             } else {
               await Future.delayed(Duration(milliseconds: 100));
             }
           }
         } else if (returnCode == 0) {
-          return CommonResponse(success: false, message: "登出失败，数据包格式错误，时间戳为$timestamp，请尝试手动登出", data: null);
+          return CommonResponse(success: false, message: "登出失败：当前时间戳为$timestamp，可尝试手动登出", data: null);
         }
       } catch (e) {
         print("解码或解密失败: $e");
+        // 重试请求
+        return await logout(userId, isCancelling, timestamp);
       }
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -120,6 +120,6 @@ class Mai2Logout {
       return CommonResponse(success: false, message: e.toString(), data: null);
     }
 
-    return CommonResponse(success: false, message: "登出失败：当前时间戳为$timestamp，可尝试手动登出", data: null);
+    return CommonResponse(success: false, message: "登出失败", data: null);
   }
 }

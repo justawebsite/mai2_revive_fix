@@ -85,7 +85,9 @@ class Mai2Preview {
         throw Exception("解析数据出错: $e");
       }
     } catch (e) {
-      throw Exception("请求出错: $e");
+      print ("$e");
+      // 重试请求
+      return await UserLoginIn(userID: userID);
     }
   }
 }

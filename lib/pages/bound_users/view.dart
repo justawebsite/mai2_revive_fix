@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:oktoast/oktoast.dart';
 
 import '../../models/user.dart';
+import '../random_music/view.dart';
 import 'controller.dart';
 
 class BoundUsersPage extends GetView<BoundUsersController> {
@@ -241,6 +242,28 @@ class BoundUsersPage extends GetView<BoundUsersController> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Get.dialog(SimpleDialog(
+            clipBehavior: Clip.antiAlias,
+            title: const Text("娱乐功能（施工中）"),
+            children: [
+              InkWell(
+                onTap: () {
+                  Get.back();
+                  Get.to(() => RandomPage());
+                },
+                child: const ListTile(
+                  title: Text("随机乐曲"),
+                  leading: Icon(Icons.library_music),
+                ),
+              ),
+            ],
+          ));
+        },
+        child: const Icon(Icons.more_horiz),
+      ),
+
       body: _buildBody(),
     );
   }

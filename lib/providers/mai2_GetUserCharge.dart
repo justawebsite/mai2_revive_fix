@@ -52,7 +52,6 @@ class Mai2Charge {
 
     try {
       final client = HttpClient(); //构造http请求
-
       final request = await client.postUrl(
         Uri.parse(
             'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserChargeApiMaimaiChn')}'),
@@ -83,8 +82,9 @@ class Mai2Charge {
 
         success = true;
       } catch (e) {
-        message = "解析数据出错: $e";
-        success = false;
+        print("解码或解密失败: $e");
+        // 重试请求
+        return await UserLoginIn(userID: userID);
       }
 
       return CommonResponse(success: success, data: jsonData, message: message);

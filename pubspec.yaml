@@ -21,6 +21,8 @@ dependencies:
   mobile_scanner: ^5.0.1
   oktoast: ^3.4.0
   wakelock: ^0.6.2
+  path_provider: ^2.0.7
+  http: ^0.13.4
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +31,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/MusicList.json

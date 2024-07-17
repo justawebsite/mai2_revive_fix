@@ -17,7 +17,7 @@ class Mai2Ticket {
     "Content-Type": "application/json",
     "User-Agent": "",
     "charset": "UTF-8",
-    "Mai-Encoding": "1.30",
+    "Mai-Encoding": "1.40",
     "Content-Encoding": "deflate",
     "Content-Length": "",
     "Host": AppConstants.mai2Host,

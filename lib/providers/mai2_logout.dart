@@ -14,11 +14,13 @@ class Mai2Logout {
   static LinkedHashMap<String, String> maiHeader = LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
     "User-Agent": "",
-    "charset": "UTF-8",
     "Mai-Encoding": "1.40",
-    "Content-Encoding": "deflate",
+    "Accept-Encoding": "",
+    "charset": "UTF-8",
     "Content-Length": "",
+    "Content-Encoding": "deflate",
     "Host": AppConstants.mai2Host,
+    "Expect": "100-continue",
   });
 
   static String obfuscate(String srcStr) {

@@ -16,11 +16,13 @@ class Mai2Ticket {
   LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
     "User-Agent": "",
-    "charset": "UTF-8",
     "Mai-Encoding": "1.40",
-    "Content-Encoding": "deflate",
+    "Accept-Encoding": "",
+    "charset": "UTF-8",
     "Content-Length": "",
+    "Content-Encoding": "deflate",
     "Host": AppConstants.mai2Host,
+    "Expect": "100-continue",
   }); //构建http数据包
 
   static String obfuscate(String srcStr) {

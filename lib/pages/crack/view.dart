@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:mai2_revive/providers/mai2_GetData.dart';
 import '../../models/user.dart';
 import '../../providers/mai2_logout.dart';
+import '../bonus/bonus.dart';
 import '../sendcode/view.dart';
 import '../ticket/view.dart';
 import 'controller.dart' as crack;
@@ -106,6 +107,16 @@ class CrackController extends GetView<CrackUsersController> {
             InkWell(
               onTap: () {
                 Get.back();
+                Get.to(() => SignbonusPage(userName: user.userName, userId: user.userId));
+              },
+              child: const ListTile(
+                title: Text("盖章"),
+                leading: Icon(Icons.add_card_rounded),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.back();
                 _showCustomTimestampDialog(user.userId);
               },
               child: const ListTile(
@@ -183,7 +194,6 @@ class CrackController extends GetView<CrackUsersController> {
               final timestamp = int.tryParse(timestampController.text);
               if (timestamp != null) {
                 final getDataResponse = await Mai2Getdata.GetData(userID: userId);
-
                 if (getDataResponse.success) {
                   final logoutResponse = await Mai2Logout.logout(userId, isCancelling, timestamp);
                   Get.back();

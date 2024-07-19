@@ -29,6 +29,8 @@ class ChimeProvider {
     try {
       final client = HttpClient();  //创建http请求
 
+      print("$data");
+
       final request = await client.postUrl(
         Uri.parse('http://${AppConstants.chimeHost}/wc_aime/api/get_data'),
       );  //发送数据包

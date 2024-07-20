@@ -37,3 +37,4 @@ flutter:
   assets:
     - assets/MusicList.json
     - assets/LoginBonusSort.xml
+    - assets/mai_music_data.json

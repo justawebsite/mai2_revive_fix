@@ -5,6 +5,7 @@ import 'package:mai2_revive/providers/mai2_GetData.dart';
 import '../../models/user.dart';
 import '../../providers/mai2_logout.dart';
 import '../bonus/bonus.dart';
+import '../diving_fish/view.dart';
 import '../sendcode/view.dart';
 import '../ticket/view.dart';
 import 'controller.dart' as crack;
@@ -104,6 +105,21 @@ class CrackController extends GetView<CrackUsersController> {
                 leading: Icon(Icons.airplane_ticket),
               ),
             ),
+            InkWell(
+              onTap: () {
+                Get.back();
+                if (user.divingtoken != null && user.divingtoken!.isNotEmpty) {
+                  Get.to(() => DivingFishPage(token: user.divingtoken!, userId: user.userId));
+                } else {
+                  showToast('Token 为空，请先绑定 Token.');
+                }
+              },
+              child: const ListTile(
+                title: Text("上传成绩至水鱼查分器"),
+                leading: Icon(Icons.upload),
+              ),
+            ),
+
             InkWell(
               onTap: () {
                 Get.back();

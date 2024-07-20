@@ -2,7 +2,6 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oktoast/oktoast.dart';
-
 import '../../models/user.dart';
 import '../random_music/view.dart';
 import 'controller.dart';
@@ -45,7 +44,6 @@ class BoundUsersPage extends GetView<BoundUsersController> {
               controller.bindUser().then((value) {
                 controller.binding = false;
                 showToast(value.message);
-                controller.binding = false;
                 if (value.success) {
                   Get.back();
                 }
@@ -73,6 +71,16 @@ class BoundUsersPage extends GetView<BoundUsersController> {
               child: const ListTile(
                 title: Text("逃离小黑屋"),
                 leading: Icon(Icons.logout),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                Get.back();
+                _bounddiving(user.userId);
+              },
+              child: const ListTile(
+                title: Text("绑定水鱼Token"),
+                leading: Icon(Icons.switch_account_outlined),
               ),
             ),
             InkWell(
@@ -106,8 +114,7 @@ class BoundUsersPage extends GetView<BoundUsersController> {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                color:
-                Get.theme.colorScheme.secondaryContainer.withOpacity(0.5),
+                color: Get.theme.colorScheme.secondaryContainer.withOpacity(0.5),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
               child: Text(user.playerRating.toString()),
@@ -151,6 +158,41 @@ class BoundUsersPage extends GetView<BoundUsersController> {
               } else {
                 showToast('请输入有效的四位数字时间，格式如0930');
               }
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _bounddiving(int userId) {
+    final TextEditingController tokenController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('绑定水鱼'),
+        content: TextField(
+          controller: tokenController,
+          decoration: const InputDecoration(
+            labelText: '输入Token',
+            hintText: '请输入Token',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.text,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+            },
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              String token = tokenController.text;
+              controller.bindDivingToken(userId, token);
+              Get.back();
             },
             child: const Text('确定'),
           ),

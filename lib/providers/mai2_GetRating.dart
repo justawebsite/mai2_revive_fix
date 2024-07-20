@@ -7,9 +7,9 @@ import 'package:encrypt/encrypt.dart';
 import 'package:get/get_connect/http/src/request/request.dart';
 import '../common/constants.dart';
 import '../common/response.dart';
-import '../models/login.dart';
 
-class Mai2Bonus {
+
+class Mai2GetRating {
   static LinkedHashMap<String, String> maiHeader = LinkedHashMap<String, String>.from({
     "Content-Type": "application/json",
     "User-Agent": "",
@@ -42,67 +42,22 @@ class Mai2Bonus {
     return encrypter.decrypt(Encrypted(data), iv: iv); //解密并返回解密后的原始数据
   } //大致同上，只不过变成了解密
 
-  static Future<CommonResponse<UserModel?>> SendBonus({
+  static Future<CommonResponse<Map<String, dynamic>>> GetRating({
     required int userID, //获取userid值
-    required String? loginId,
-    required List<int> bonusIds,
-    required List<int> points,
   }) async {
-    final userLoginBonusList = List<Map<String, dynamic>>.generate(bonusIds.length, (index) {
-      return {
-        "bonusId": bonusIds[index],
-        "point": points[index],
-        "isCurrent": true,
-        "isComplete": false,
-      };
-    });
+    final data = jsonEncode({'userId': userID});
+    final body = zlib.encode(aesEncrypt(data.toString())); //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
 
-    final data = jsonEncode({
-      "userId": userID,
-      "playlogId": loginId,
-      "isEventMode": false,
-      "isFreePlay": false,
-      "upsertUserAll": {
-        "userData": "",
-        "userExtend": "",
-        "userOption": "",
-        "userCharacterList": "",
-        "userGhost": "",
-        "userMapList": "",
-        "userLoginBonusList": userLoginBonusList,
-        "userRatingList": "",
-        "userItemList": "",
-        "userMusicDetailList": "",
-        "userCourseList": "",
-        "userFriendSeasonRankingList": "",
-        "userChargeList": "",
-        "userFavoriteList": "",
-        "userActivityList": "",
-        "userGamePlaylogList": "",
-        "user2pPlaylog": "",
-        "isNewCharacterList": "",
-        "isNewMapList": "",
-        "isNewLoginBonusList": "",
-        "isNewItemList": "",
-        "isNewMusicDetailList": "",
-        "isNewCourseList": "",
-        "isNewFavoriteList": "",
-        "isNewFriendSeasonRankingList": ""
-      }
-    });
-
-    print("Received decrypted response body: $data");
-
-    final body = zlib.encode(aesEncrypt(data)); //将userid值写入json字符串并调用上面的加密器进行加密，在用zlib算法压缩
-
-    maiHeader['User-Agent'] = "${obfuscate('UpsertUserAllApiMaimaiChn')}#$userID"; //将user-agent标设置为GetUserPreviewApiMaimaiChn的值和userid
+    maiHeader['User-Agent'] =
+    "${obfuscate('GetUserRatingApiMaimaiChn')}#$userID";
     maiHeader['Content-Length'] = body.length.toString(); //更新请求体的字节长度
 
     try {
       final client = HttpClient(); //构造http请求
 
       final request = await client.postUrl(
-        Uri.parse('https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('UpsertUserAllApiMaimaiChn')}'),
+        Uri.parse(
+            'https://${AppConstants.mai2Host}/Maimai2Servlet/${obfuscate('GetUserRatingApiMaimaiChn')}'),
       ); //设置URL并发送数据包
 
       request.headers.clear(); //清空http请求头
@@ -118,39 +73,26 @@ class Mai2Bonus {
 
       String message = "";
       bool success = false;
+      Map<String, dynamic> jsonData = {};
 
       final responseBody = await response.toBytes(); //接收数据包并转换为字节数组
 
       try {
         message = aesDecrypt(Uint8List.fromList(zlib.decode(responseBody))); //解压响应体并转换编码和解密数据
+        jsonData = jsonDecode(message); //解析得到的json数据
 
-        print("Received decrypted response body: $message");
+        print('data message: $message');
 
-        final json = jsonDecode(message); //解析得到的json数据
-        if (json['returnCode'] == 1) {
-          success = true;
-          message = "签到成功";
-        } else {
-          success = false;
-          message = "签到可能成功，请前往舞萌Net进行确认";
-        }
+        success = true;
       } catch (e) {
-        print("$e");
+        print("解码或解密失败: $e");
         // 重试请求
-        return await SendBonus(userID: userID, loginId: loginId, bonusIds: bonusIds, points: points);
+        return await GetRating(userID: userID);
       }
 
-      return CommonResponse(
-        success: success,
-        data: null,
-        message: message,
-      );
+      return CommonResponse(success: success, data: jsonData, message: message);
     } catch (e) {
-      return CommonResponse(
-        success: false,
-        data: null,
-        message: e.toString(),
-      );
+      return CommonResponse(success: false, data: {}, message: "请求出错: $e");
     }
   }
 }

@@ -43,21 +43,7 @@ class BoundUsersController extends GetxController {
   }
 
   Future<void> refreshData() async {
-    int total = 16;
-    int pageNum = 0;
-    List<dynamic> users = [];
-
-    boundUsers.clear();
-
-    while (users.length < total) {
-      final result = repository.getUsers(pageNum);
-
-      total = result.count;
-      users.addAll(result.results);
-
-      pageNum++;
-    }
-
+    List<UserModel> users = StorageProvider.userList.get();
     if (users.isEmpty) {
       refreshController.finishRefresh(IndicatorResult.noMore);
       return;
@@ -127,7 +113,7 @@ class BoundUsersController extends GetxController {
       );
     }
 
-    StorageProvider.userList.add(user);
+    await StorageProvider.userList.add(user);
 
     await refreshData();
 
@@ -138,7 +124,7 @@ class BoundUsersController extends GetxController {
   }
 
   void unbindUser(int userId) async {
-    StorageProvider.userList.deleteWhere((item) => item.userId == userId);
+    await StorageProvider.userList.deleteWhere((item) => item.userId == userId);
     await refreshData();
   }
 
@@ -168,5 +154,23 @@ class BoundUsersController extends GetxController {
         return;
       }
     }
+  }
+
+  Future<void> bindDivingToken(int userId, String token) async {
+    // 获取用户列表并找到对应用户
+    var userList = StorageProvider.userList.get();
+    var user = userList.firstWhere(
+          (u) => u.userId == userId,
+      orElse: () => UserModel(userId: userId, userName: "未知"),
+    );
+
+    // 更新用户的 Token
+    user.divingtoken = token;
+
+    // 保存更新后的用户列表
+    await StorageProvider.userList.updateWhere((u) => u.userId == userId, user);
+
+    // 提示绑定成功
+    showToast("Token 绑定成功");
   }
 }

@@ -1,12 +1,13 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:xml/xml.dart';
-import '../../providers/mai2_bonus.dart'; // 引入发券方法
-import '../../providers/mai2_GetHistoryBonus.dart'; // 引入Mai2Getdata方法
+import '../../providers/mai2_GetHistoryBonus.dart';
+import '../../providers/make_Data.dart'; // 引入发券方法
 import '../../providers/mai2_login.dart'; // 确保导入路径正确
 import '../../providers/mai2_logout.dart'; // 引入登出方法
+import '../../providers/make_bonus.dart'; // 引入Mai2MakeData方法
+import '../../providers/mai2_upsertUserAll.dart'; // 引入Mai2Upsertuserall方法
 import '../../models/login.dart'; // 确保导入路径正确
 
 class SignbonusPage extends StatefulWidget {
@@ -28,11 +29,12 @@ class _SignbonusPageState extends State<SignbonusPage> {
   int? selectedBonusId;
   int? points;
   String message = '';
-  TextEditingController pointsController = TextEditingController();
   TextEditingController messageController = TextEditingController();
+  TextEditingController pointsController = TextEditingController();
   var isCancelling = false.obs;
   UserModel? user;
   late int timestamp;
+  String logintime = DateTime.now().toString();
   bool isLoading = true;
   bool hasError = false;
   String errorMessage = '';
@@ -41,7 +43,8 @@ class _SignbonusPageState extends State<SignbonusPage> {
   void initState() {
     super.initState();
     timestamp = _getTokyoTimestamp(); // 初始化东京时间戳
-    _initializePage(); // 初始化页面
+    _loginUser(); // 调用登录方法
+    _loadBonusOptions(); // 加载bonus选项
   }
 
   int _getTokyoTimestamp() {
@@ -50,11 +53,6 @@ class _SignbonusPageState extends State<SignbonusPage> {
     const tokyoOffset = 9 * 3600; // 东京时间相对于UTC的偏移量，单位为秒
     final tokyoTimestamp = now.toUtc().millisecondsSinceEpoch ~/ 1000 + tokyoOffset - localOffset; // 计算东京时间戳
     return tokyoTimestamp;
-  }
-
-  Future<void> _initializePage() async {
-    await _loadBonusOptions();
-    await _loginUser();
   }
 
   Future<void> _loginUser() async {
@@ -149,30 +147,57 @@ class _SignbonusPageState extends State<SignbonusPage> {
     }
   }
 
+
   void _sendBonus() async {
     print("开始发送bonus...");
-    final response = await Mai2Bonus.SendBonus(
+    final makeDataResponse = await Mai2MakeData.MakeData(
       userID: widget.userId,
-      loginId: user!.UserLoginID,
-      bonusIds: [selectedBonusId!],
-      points: [points!],
+      logintime: logintime,
+      datetime: timestamp,
     );
 
-    setState(() {
-      message = response.message;
-      messageController.text = message;
-    });
-    print("bonus发送结果: ${response.message}");
+    if (makeDataResponse.success) {
+      final response = await Mai2Bonus.SendBonus(
+        userID: widget.userId,
+        loginId: user!.UserLoginID,
+        bonusIds: [selectedBonusId!],
+        points: [points!],
+      );
 
-    // 调用登出方法
-    final logoutResponse = await Mai2Logout.logout(widget.userId, isCancelling, timestamp);
+      // 在这里调用 Mai2Upsertuserall.SendAll
+      final upsertResponse = await Mai2Upsertuserall.SendAll(
+        userID: widget.userId,
+        loginId: user!.UserLoginID,
+        bonusIds: [selectedBonusId!],
+        points: [points!],
+        logintime: logintime,
+        timestamp: timestamp,
+      );
 
-    setState(() {
-      message += "\n${logoutResponse.message}";
-      messageController.text = message;
-    });
-    print("登出结果: ${logoutResponse.message}");
+      setState(() {
+        message = response.message + "\n" + upsertResponse.message;
+        messageController.text = message;
+      });
+      print("bonus发送结果: ${response.message}");
+      print("用户数据上传结果: ${upsertResponse.message}");
+
+      // 调用登出方法
+      final logoutResponse = await Mai2Logout.logout(widget.userId, isCancelling, timestamp);
+
+      setState(() {
+        message += "\n${logoutResponse.message}";
+        messageController.text = message;
+      });
+      print("登出结果: ${logoutResponse.message}");
+    } else {
+      setState(() {
+        message = makeDataResponse.message;
+        messageController.text = message;
+      });
+      print("数据重构失败: ${makeDataResponse.message}");
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

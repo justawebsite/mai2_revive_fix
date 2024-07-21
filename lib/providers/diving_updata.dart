@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../common/response.dart';
 
 class DivingUpdata {
-  static Future<CommonResponse> upload(Map<String, dynamic> data, String token) async {
+  static Future<CommonResponse> upload(List<Map<String, dynamic>> data, String token) async {
     try {
       var url = 'https://www.diving-fish.com/api/maimaidxprober/player/update_records';
       var headers = {

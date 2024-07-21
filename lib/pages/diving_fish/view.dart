@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:oktoast/oktoast.dart';
@@ -69,7 +68,7 @@ class _DivingFishPageState extends State<DivingFishPage> {
     }
   }
 
-  Future<Map<String, dynamic>> _convertMusicData(Map<String, dynamic> musicData) async {
+  Future<List<Map<String, dynamic>>> _convertMusicData(Map<String, dynamic> musicData) async {
     final userMusicData = musicData['userMusicList'];
     final maiSongData = await _getMaiMusicData();
 
@@ -95,30 +94,32 @@ class _DivingFishPageState extends State<DivingFishPage> {
           continue;
         }
 
+        if (levelIndex >= maiMusic['ds'].length || levelIndex >= maiMusic['level'].length) {
+          _log('levelIndex 超出范围：$levelIndex');
+          continue;
+        }
+
         var achievements = userMusic['achievement'] / 10000.0;
         var ds = maiMusic['ds'][levelIndex];
         var ra = _calRa(achievements, ds);
 
         var record = {
-          'achievements': achievements,
-          'ds': ds,
-          'dxScore': userMusic['deluxscoreMax'],
-          'fc': comboToFc[userMusic['comboStatus']],
-          'fs': syncToFs[userMusic['syncStatus']],
-          'level': maiMusic['level'][levelIndex],
-          'level_index': levelIndex,
-          'level_label': levelIndexToLabel[levelIndex],
-          'ra': ra,
-          'rate': scoreRankToRate[userMusic['scoreRank']],
-          'song_id': songId,
           'title': maiMusic['title'],
           'type': maiMusic['type'],
+          'level_index': levelIndex,
+          'achievements': achievements,
+          'fc': comboToFc[userMusic['comboStatus']],
+          'fs': syncToFs[userMusic['syncStatus']],
+          'dxScore': userMusic['deluxscoreMax'],
+          'level': maiMusic['level'][levelIndex],
+          'rate': scoreRankToRate[userMusic['scoreRank']],
+          'ra': ra,
         };
         records.add(record);
       }
     }
 
-    return {'userId': widget.userId, 'records': records};
+    return records;
   }
 
   Future<Map<String, dynamic>> _getMaiMusicData() async {

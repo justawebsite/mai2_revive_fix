@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:io';
+//import 'dart:io';
+import 'package:universal_io/io.dart';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart';

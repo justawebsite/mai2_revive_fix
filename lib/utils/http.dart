@@ -1,5 +1,6 @@
 import 'dart:collection';
-import 'dart:io';
+//import 'dart:io';
+import 'package:universal_io/io.dart';
 
 class Mai2HttpResponse {
   final int statusCode;
